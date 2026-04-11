@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanonak Protocol</title>
+    <meta name="description" content="An open protocol for defining, versioning, and sharing semantic ontologies across distributed publishers.">
+    <style>
+        :root {
+            --text: #e4e4e7;
+            --text-secondary: #a1a1aa;
+            --bg: #0f0f11;
+            --border: #27272a;
+            --code-bg: #18181b;
+            --accent: #60a5fa;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background: var(--bg);
+        }
+
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        header {
+            padding: 3rem 0 2rem;
+            text-align: center;
+        }
+
+        header img {
+            display: block;
+            max-width: 160px;
+            margin: 0 auto 1.5rem;
+        }
+
+        header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 520px;
+            margin: 0 auto;
+        }
+
+        section {
+            padding: 2rem 0;
+            border-top: 1px solid var(--border);
+        }
+
+        h2 {
+            font-size: 1.35rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        p, li {
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        ul {
+            padding-left: 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        code {
+            font-family: 'SF Mono', 'Fira Code', 'Fira Mono', Menlo, Consolas, monospace;
+            font-size: 0.875em;
+            background: var(--code-bg);
+            padding: 0.15rem 0.35rem;
+            border-radius: 3px;
+        }
+
+        pre {
+            background: var(--code-bg);
+            padding: 1rem 1.25rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 0.75rem 0 1rem;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .y-key { color: #7dd3fc; }
+        .y-val { color: #fbbf24; }
+        .y-str { color: #86efac; }
+        .y-comment { color: #52525b; font-style: italic; }
+
+        a {
+            color: var(--text);
+            text-decoration: none;
+            border-bottom: 1px solid var(--border);
+        }
+
+        a:hover {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        footer {
+            padding: 2rem 0;
+            border-top: 1px solid var(--border);
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Kanonak Protocol</h1>
+            <p>An open protocol for defining, versioning, and sharing semantic ontologies across distributed publishers.</p>
+            <p><a href="https://github.com/kanonak-protocol">View on GitHub</a></p>
+        </header>
+
+        <section>
+            <h2>Why Kanonak Protocol?</h2>
+            <p>Knowledge lives in the heads of domain experts, but there is no standard way to turn that knowledge into durable, machine-readable definitions that others can build on. Kanonak Protocol changes that.</p>
+
+            <h3>Stable resource identifiers</h3>
+            <p>Every class, property, and instance gets a persistent, globally unique identifier tied to a publisher domain. These identifiers don't break when systems change &mdash; they give people and machines a consistent way to refer to the same concepts.</p>
+
+            <h3>Distributed publishing</h3>
+            <p>Anyone with a domain can publish ontologies. There is no central authority deciding what types are valid. Domain experts &mdash; biologists, engineers, legal scholars &mdash; can develop their knowledge into formal schemas and share them directly from their own infrastructure.</p>
+
+            <h3>Versioned ontologies</h3>
+            <p>Ontologies evolve. Kanonak Protocol uses semantic versioning so publishers can improve their schemas without breaking consumers on earlier versions. Import what you need, pin to a version range, and upgrade on your own schedule.</p>
+
+            <h3>Built for AI agents</h3>
+            <p>When AI agents work with Kanonak ontologies, they are grounded in a shared vocabulary with formally defined types and relationships. The Kanonak CLI validates that data conforms to its schema &mdash; giving you guarantees about the shape of information rather than hoping the model got it right. Structured, validated data reduces ambiguity and gives agents less room to hallucinate.</p>
+        </section>
+
+        <section>
+            <h2>Example</h2>
+
+            <h3>Define an ontology</h3>
+            <p>A Kanonak package defines classes and properties. This one describes people with addresses:</p>
+            <pre><code><span class="y-key">contacts</span>:
+  <span class="y-key">type</span>: <span class="y-val">Package</span>
+  <span class="y-key">publisher</span>: <span class="y-str">mycompany.com</span>
+  <span class="y-key">version</span>: <span class="y-str">1.0.0</span>
+  <span class="y-key">imports</span>:
+    - <span class="y-key">publisher</span>: <span class="y-str">kanonak.org</span>
+      <span class="y-key">packages</span>:
+        - <span class="y-key">package</span>: <span class="y-str">core-rdf</span>
+          <span class="y-key">match</span>: <span class="y-val">^</span>
+          <span class="y-key">version</span>: <span class="y-str">1.0.0</span>
+          <span class="y-key">alias</span>: <span class="y-str">rdfs</span>
+        - <span class="y-key">package</span>: <span class="y-str">core-owl</span>
+          <span class="y-key">match</span>: <span class="y-val">^</span>
+          <span class="y-key">version</span>: <span class="y-str">2.0.0</span>
+          <span class="y-key">alias</span>: <span class="y-str">owl</span>
+        - <span class="y-key">package</span>: <span class="y-str">core-xsd</span>
+          <span class="y-key">match</span>: <span class="y-val">^</span>
+          <span class="y-key">version</span>: <span class="y-str">1.0.0</span>
+          <span class="y-key">alias</span>: <span class="y-str">xsd</span>
+
+<span class="y-key">Person</span>:
+  <span class="y-key">type</span>: <span class="y-val">rdfs.Class</span>
+  <span class="y-key">label</span>: <span class="y-str">Person</span>
+  <span class="y-key">comment</span>: <span class="y-str">A person in the contacts directory</span>
+
+<span class="y-key">Address</span>:
+  <span class="y-key">type</span>: <span class="y-val">rdfs.Class</span>
+  <span class="y-key">label</span>: <span class="y-str">Address</span>
+
+<span class="y-key">fullName</span>:
+  <span class="y-key">type</span>: <span class="y-val">owl.DatatypeProperty</span>
+  <span class="y-key">domain</span>: <span class="y-val">Person</span>
+  <span class="y-key">range</span>: <span class="y-val">xsd.string</span>
+
+<span class="y-key">email</span>:
+  <span class="y-key">type</span>: <span class="y-val">owl.DatatypeProperty</span>
+  <span class="y-key">domain</span>: <span class="y-val">Person</span>
+  <span class="y-key">range</span>: <span class="y-val">xsd.string</span>
+
+<span class="y-key">hasAddress</span>:
+  <span class="y-key">type</span>: <span class="y-val">owl.ObjectProperty</span>
+  <span class="y-key">domain</span>: <span class="y-val">Person</span>
+  <span class="y-key">range</span>: <span class="y-val">Address</span>
+
+<span class="y-key">street</span>:
+  <span class="y-key">type</span>: <span class="y-val">owl.DatatypeProperty</span>
+  <span class="y-key">domain</span>: <span class="y-val">Address</span>
+  <span class="y-key">range</span>: <span class="y-val">xsd.string</span>
+
+<span class="y-key">city</span>:
+  <span class="y-key">type</span>: <span class="y-val">owl.DatatypeProperty</span>
+  <span class="y-key">domain</span>: <span class="y-val">Address</span>
+  <span class="y-key">range</span>: <span class="y-val">xsd.string</span></code></pre>
+
+            <h3>Create instances</h3>
+            <p>A separate package imports the ontology and creates typed instances with embedded resources:</p>
+            <pre><code><span class="y-key">company-directory</span>:
+  <span class="y-key">type</span>: <span class="y-val">Package</span>
+  <span class="y-key">publisher</span>: <span class="y-str">mycompany.com</span>
+  <span class="y-key">version</span>: <span class="y-str">1.0.0</span>
+  <span class="y-key">imports</span>:
+    - <span class="y-key">publisher</span>: <span class="y-str">mycompany.com</span>
+      <span class="y-key">packages</span>:
+        - <span class="y-key">package</span>: <span class="y-str">contacts</span>
+          <span class="y-key">match</span>: <span class="y-val">^</span>
+          <span class="y-key">version</span>: <span class="y-str">1.0.0</span>
+
+<span class="y-key">alice-smith</span>:
+  <span class="y-key">type</span>: <span class="y-val">Person</span>
+  <span class="y-key">fullName</span>: <span class="y-str">Alice Smith</span>
+  <span class="y-key">email</span>: <span class="y-str">alice@mycompany.com</span>
+  <span class="y-key">hasAddress</span>:
+    <span class="y-key">street</span>: <span class="y-str">742 Evergreen Terrace</span>
+    <span class="y-key">city</span>: <span class="y-str">Springfield</span>
+
+<span class="y-key">bob-jones</span>:
+  <span class="y-key">type</span>: <span class="y-val">Person</span>
+  <span class="y-key">fullName</span>: <span class="y-str">Bob Jones</span>
+  <span class="y-key">email</span>: <span class="y-str">bob@mycompany.com</span>
+  <span class="y-key">hasAddress</span>:
+    <span class="y-key">street</span>: <span class="y-str">221B Baker Street</span>
+    <span class="y-key">city</span>: <span class="y-str">London</span></code></pre>
+        </section>
+
+        <section>
+            <h2>Kanonak CLI</h2>
+            <p>Install the CLI to validate, install packages, and inspect dependencies:</p>
+            <pre><code>npm install -g @kanonak-protocol/cli --registry https://npm.pkg.github.com</code></pre>
+
+            <h3>Install packages</h3>
+            <pre><code><span class="y-comment"># Install a package and its dependencies</span>
+kanonak install kanonak.org/core-rdf</code></pre>
+
+            <h3>Validate</h3>
+            <pre><code><span class="y-comment"># Validate a file — resolves imports and checks types</span>
+kanonak validate contacts.kan.yml</code></pre>
+
+            <h3>Inspect dependencies</h3>
+            <pre><code><span class="y-comment"># Show the resolved dependency tree</span>
+kanonak deps contacts.kan.yml</code></pre>
+        </section>
+
+        <section>
+            <h2>About</h2>
+            <p>The protocol was originally called "Canon", short for <em>canonical</em> &mdash; the idea that something only needs to be defined once to become the globally referenceable, authoritative form of the thing it describes. The name was changed to <strong>Kanonak</strong> to avoid overlap with existing brand names. Kanonak is a new word that preserves the canonical roots while being entirely its own.</p>
+            <p>Kanonak Protocol was created by <a href="https://www.linkedin.com/in/paulfryerlinkedin/">Paul Fryer</a> in 2024 while building Genval, a startup focused on letting AI generate code from structured documentation. When existing schema formats like JSON Schema and RDF fell short on distributed publishing, versioning, and readability &mdash; he built the protocol from scratch.</p>
+        </section>
+
+        <footer>
+            <p>&copy; 2025 Genval LLC</p>
+        </footer>
+    </div>
+</body>
+</html>
