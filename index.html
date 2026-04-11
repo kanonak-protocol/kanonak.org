@@ -98,12 +98,32 @@
             margin: 0.75rem 0 1rem;
             font-size: 0.85rem;
             line-height: 1.5;
+            position: relative;
         }
 
         pre code {
             background: none;
             padding: 0;
         }
+
+        .copy-btn {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 3px 6px;
+            font-size: 13px;
+            line-height: 1;
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+
+        pre:hover .copy-btn { opacity: 1; }
+        .copy-btn:hover { color: var(--text); border-color: var(--text-secondary); }
 
         .y-key { color: #7dd3fc; }
         .y-val { color: #fbbf24; }
@@ -247,19 +267,16 @@
         <section>
             <h2>Kanonak CLI</h2>
             <p>Install the CLI to validate, install packages, and inspect dependencies:</p>
-            <pre><code>npm install -g @kanonak-protocol/cli</code></pre>
+            <pre class="copyable"><code>npm install -g @kanonak-protocol/cli</code></pre>
 
             <h3>Install packages</h3>
-            <pre><code><span class="y-comment"># Install a package and its dependencies</span>
-kanonak install kanonak.org/core-rdf</code></pre>
+            <pre class="copyable"><code>kanonak install kanonak.org/core-rdf</code></pre>
 
             <h3>Validate</h3>
-            <pre><code><span class="y-comment"># Validate a file — resolves imports and checks types</span>
-kanonak validate contacts.kan.yml</code></pre>
+            <pre class="copyable"><code>kanonak validate contacts.kan.yml</code></pre>
 
             <h3>Inspect dependencies</h3>
-            <pre><code><span class="y-comment"># Show the resolved dependency tree</span>
-kanonak deps contacts.kan.yml</code></pre>
+            <pre class="copyable"><code>kanonak deps contacts.kan.yml</code></pre>
         </section>
 
         <section>
@@ -272,5 +289,21 @@ kanonak deps contacts.kan.yml</code></pre>
             <p>&copy; 2024-2026 Genval LLC</p>
         </footer>
     </div>
+    <script>
+    document.querySelectorAll('pre.copyable').forEach(function(pre) {
+        var btn = document.createElement('button');
+        btn.className = 'copy-btn';
+        btn.textContent = '\u2398';
+        btn.title = 'Copy';
+        btn.addEventListener('click', function() {
+            var text = pre.querySelector('code').textContent;
+            navigator.clipboard.writeText(text).then(function() {
+                btn.textContent = '\u2713';
+                setTimeout(function() { btn.textContent = '\u2398'; }, 1500);
+            });
+        });
+        pre.appendChild(btn);
+    });
+    </script>
 </body>
 </html>
