@@ -96,6 +96,32 @@ jobs:
           echo "Generated index.txt:"
           cat index.txt
 
+      - name: Generate .well-known/kanonak.json
+        shell: bash
+        run: |
+          mkdir -p .well-known
+          cat > .well-known/kanonak.json <<'EOF'
+          {
+            "version": 1,
+            "auth": "none"
+          }
+          EOF
+          echo "Generated .well-known/kanonak.json:"
+          cat .well-known/kanonak.json
+
+      - name: Generate Jekyll _config.yml to include .well-known
+        shell: bash
+        run: |
+          # Jekyll ignores dot-prefixed directories by default. Emit a
+          # _config.yml that explicitly includes .well-known so the
+          # publisher config is shipped in the built site.
+          cat > _config.yml <<'EOF'
+          include:
+            - .well-known
+          EOF
+          echo "Generated _config.yml:"
+          cat _config.yml
+
       - name: Clean up packages checkout
         run: rm -rf _packages
 
