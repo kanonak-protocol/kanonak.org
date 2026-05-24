@@ -41,6 +41,7 @@ jobs:
           while IFS= read -r file; do
             pkg_name=""
             pkg_version=""
+            pkg_publisher=""
             current_key=""
 
             while IFS= read -r line; do
@@ -54,22 +55,24 @@ jobs:
                 pkg_name="$current_key"
               fi
 
+              if [[ -n "$pkg_name" && "$current_key" == "$pkg_name" && "$line" =~ ^[[:space:]]+publisher:[[:space:]]*(.+)$ ]]; then
+                pkg_publisher="${BASH_REMATCH[1]}"
+              fi
+
               if [[ -n "$pkg_name" && "$current_key" == "$pkg_name" && "$line" =~ ^[[:space:]]+version:[[:space:]]*(.+)$ ]]; then
                 pkg_version="${BASH_REMATCH[1]}"
               fi
-
-              if [[ -n "$pkg_name" && -n "$pkg_version" ]]; then
-                break
-              fi
             done < "$file"
 
-            if [[ -n "$pkg_name" && -n "$pkg_version" ]]; then
+            # Only publish kanonak.org packages. Anything else (e.g. example.org
+            # test/example fixtures) is skipped so it never lands on the site.
+            if [[ -n "$pkg_name" && -n "$pkg_version" && "$pkg_publisher" == "kanonak.org" ]]; then
               mkdir -p "$SITE_DIR/$pkg_name"
               cp "$file" "$SITE_DIR/$pkg_name/$pkg_version.kan.yml"
               echo "  $pkg_name/$pkg_version"
               COUNT=$((COUNT + 1))
             else
-              echo "  Skipped: $file (no Package metadata)"
+              echo "  Skipped: $file (publisher='${pkg_publisher:-none}', not kanonak.org)"
             fi
           done < <(find _packages -name '*.kan.yml' -type f | sort)
 
