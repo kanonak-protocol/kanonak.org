@@ -1,15 +1,37 @@
 name: Deploy Publisher Site
 
+# Builds the kanonak.org publisher origin from the package graph and
+# deploys it to GitHub Pages.
+#
+# The entire site — human-facing pages AND the machine-facing publisher
+# endpoints — is produced by a single `kanonak publish`. There is no
+# bespoke YAML parsing here: the CLI reads the packages through the SDK
+# object model (so names, versions, aliases, and imports resolve exactly
+# as everywhere else) and writes a complete static origin:
+#
+#   - the landing page and every package/resource page, derived through
+#     the look cascade (the root derives from kanonak-org/home — there is
+#     no hand-written HTML);
+#   - index.txt, .well-known/kanonak.json, and the raw
+#     {package}/{version}.kan.yml sources that `kanonak install` and HTTP
+#     import resolution fetch.
+#
+# The build output is plain static files, portable to any host. The only
+# GitHub-Pages-specific steps are CNAME and .nojekyll below; an S3 / CDN
+# deploy would swap just those. This workflow is meant to read as a
+# reference for anyone statically hosting a Kanonak publisher.
+
 on:
   push:
     branches: ["main"]
   workflow_dispatch:
+  # The packages repo pings this (repository_dispatch) when it changes,
+  # so the published origin tracks the package graph.
   repository_dispatch:
     types: [packages-updated]
 
 permissions:
   contents: read
-  packages: read
   pages: write
   id-token: write
 
@@ -22,6 +44,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout site repo
+        # Provides the GitHub-Pages host specifics (CNAME) that the
+        # platform-agnostic build deliberately omits.
         uses: actions/checkout@v4
 
       - name: Checkout packages source
@@ -30,100 +54,27 @@ jobs:
           repository: kanonak-protocol/packages
           path: _packages
 
-      - name: Transform packages to site structure
-        shell: bash
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install the Kanonak CLI
+        # Requires a CLI version whose `publish` emits the machine-facing
+        # endpoints (index.txt, .well-known/kanonak.json, raw .kan.yml).
+        run: npm install -g @kanonak-protocol/cli
+
+      - name: Build the publisher origin
+        # One command renders the whole origin from the package graph.
+        run: kanonak publish --workspace _packages --out _site
+
+      - name: Add GitHub Pages host specifics
         run: |
-          # For each .kan.yml file in _packages, extract package name and version,
-          # then place it at {package-name}/{version}.kan.yml for static serving.
-          SITE_DIR="."
-          COUNT=0
-
-          while IFS= read -r file; do
-            pkg_name=""
-            pkg_version=""
-            pkg_publisher=""
-            current_key=""
-
-            while IFS= read -r line; do
-              line="${line//$'\r'/}"
-
-              if [[ "$line" =~ ^([a-zA-Z0-9_-]+):\ *$ ]] || [[ "$line" =~ ^([a-zA-Z0-9_-]+):$ ]]; then
-                current_key="${BASH_REMATCH[1]}"
-              fi
-
-              if [[ "$line" =~ ^[[:space:]]+type:[[:space:]]*Package$ ]]; then
-                pkg_name="$current_key"
-              fi
-
-              if [[ -n "$pkg_name" && "$current_key" == "$pkg_name" && "$line" =~ ^[[:space:]]+publisher:[[:space:]]*(.+)$ ]]; then
-                pkg_publisher="${BASH_REMATCH[1]}"
-              fi
-
-              if [[ -n "$pkg_name" && "$current_key" == "$pkg_name" && "$line" =~ ^[[:space:]]+version:[[:space:]]*(.+)$ ]]; then
-                pkg_version="${BASH_REMATCH[1]}"
-              fi
-            done < "$file"
-
-            # Only publish kanonak.org packages. Anything else (e.g. example.org
-            # test/example fixtures) is skipped so it never lands on the site.
-            if [[ -n "$pkg_name" && -n "$pkg_version" && "$pkg_publisher" == "kanonak.org" ]]; then
-              mkdir -p "$SITE_DIR/$pkg_name"
-              cp "$file" "$SITE_DIR/$pkg_name/$pkg_version.kan.yml"
-              echo "  $pkg_name/$pkg_version"
-              COUNT=$((COUNT + 1))
-            else
-              echo "  Skipped: $file (publisher='${pkg_publisher:-none}', not kanonak.org)"
-            fi
-          done < <(find _packages -name '*.kan.yml' -type f | sort)
-
-          echo ""
-          echo "Placed $COUNT package(s) into site structure."
-
-      - name: Generate index.txt
-        shell: bash
-        run: |
-          # Build index.txt from the generated package directories
-          INDEX=""
-          for dir in */; do
-            dir_name="${dir%/}"
-            # Skip non-package directories
-            [[ "$dir_name" == "_packages" || "$dir_name" == "_site" || "$dir_name" == "static" || "$dir_name" == ".github" || "$dir_name" == "browser" ]] && continue
-            for file in "$dir"*.kan.yml; do
-              [[ -f "$file" ]] || continue
-              version="$(basename "$file" .kan.yml)"
-              INDEX="${INDEX}${dir_name}/${version}\n"
-            done
-          done
-
-          echo -e "$INDEX" | sort | sed '/^$/d' > index.txt
-          echo "Generated index.txt:"
-          cat index.txt
-
-      - name: Generate .well-known/kanonak.json
-        shell: bash
-        run: |
-          mkdir -p .well-known
-          cat > .well-known/kanonak.json <<'EOF'
-          {
-            "version": 1,
-            "auth": "none"
-          }
-          EOF
-          echo "Generated .well-known/kanonak.json:"
-          cat .well-known/kanonak.json
-
-      - name: Generate Jekyll _config.yml to include .well-known
-        shell: bash
-        run: |
-          # Jekyll ignores dot-prefixed directories by default. Emit a
-          # _config.yml that explicitly includes .well-known so the
-          # publisher config is shipped in the built site.
-          cat > _config.yml <<'EOF'
-          include:
-            - .well-known
-          EOF
-          echo "Generated _config.yml:"
-          cat _config.yml
+          # Custom domain.
+          cp CNAME _site/CNAME
+          # Serve the tree verbatim: no Jekyll processing, and dotfiles
+          # like .well-known/ (plus any underscore paths) are preserved.
+          touch _site/.nojekyll
 
       - name: Clean up packages checkout
         run: rm -rf _packages
@@ -131,14 +82,10 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      - name: Build with Jekyll
-        uses: actions/jekyll-build-pages@v1
-        with:
-          source: ./
-          destination: ./_site
-
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
 
   deploy:
     environment:
