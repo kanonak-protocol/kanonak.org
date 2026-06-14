@@ -12,9 +12,10 @@ name: Deploy Publisher Site
 #   - the landing page and every package/resource page, derived through
 #     the look cascade (the root derives from kanonak-org/home — there is
 #     no hand-written HTML);
-#   - index.txt, .well-known/kanonak.json, and the raw
-#     {package}/{version}.kan.yml sources that `kanonak install` and HTTP
-#     import resolution fetch.
+#   - .well-known/kanonak.json (discovery + featured_packages), kanonak.lock
+#     (the resolution + integrity source), and the raw
+#     {package}/{version}.kan.yml sources that `kanonak install` / `connect`
+#     and HTTP import resolution fetch.
 #
 # The build output is plain static files, portable to any host. The only
 # GitHub-Pages-specific steps are CNAME and .nojekyll below; an S3 / CDN
@@ -61,7 +62,7 @@ jobs:
 
       - name: Install the Kanonak CLI
         # Requires a CLI version whose `publish` emits the machine-facing
-        # endpoints (index.txt, .well-known/kanonak.json, raw .kan.yml).
+        # endpoints (.well-known/kanonak.json, kanonak.lock, raw .kan.yml).
         run: npm install -g @kanonak-protocol/cli
 
       - name: Build the publisher origin
