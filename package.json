@@ -3,6 +3,6 @@
   "private": true,
   "description": "The Kanonak CLI that builds kanonak.org's publisher origin. package-lock.json pins it, so moving it is a reviewed change here.",
   "dependencies": {
-    "@kanonak-protocol/cli": "^8.0.0"
+    "@kanonak-protocol/cli": "^8.6.0"
   }
 }
