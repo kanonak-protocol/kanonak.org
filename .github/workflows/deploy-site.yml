@@ -21,15 +21,17 @@ name: Deploy Publisher Site
 # GitHub-Pages-specific steps are CNAME and .nojekyll below; an S3 / CDN
 # deploy would swap just those. This workflow is meant to read as a
 # reference for anyone statically hosting a Kanonak publisher.
+#
+# It runs on a push here, by hand, and every 30 minutes, when it deploys only
+# if packages' main has moved since the commit the live site was built from.
+# That needs no token in packages to signal this repository (kanonak.org#1).
 
 on:
   push:
     branches: ["main"]
   workflow_dispatch:
-  # The packages repo pings this (repository_dispatch) when it changes,
-  # so the published origin tracks the package graph.
-  repository_dispatch:
-    types: [packages-updated]
+  schedule:
+    - cron: "7,37 * * * *"
 
 permissions:
   contents: read
@@ -41,7 +43,39 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  changed:
+    runs-on: ubuntu-24.04
+    outputs:
+      build: ${{ steps.compare.outputs.build }}
+    steps:
+      - name: Decide whether packages' main has moved since the live site was built
+        id: compare
+        env:
+          EVENT: ${{ github.event_name }}
+          RECORD: https://kanonak.org/packages-commit.txt
+        run: |
+          if [ "$EVENT" != "schedule" ]; then echo "build=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          head=$(git ls-remote https://github.com/kanonak-protocol/packages refs/heads/main | cut -f1 || true)
+          if [ -z "$head" ]; then echo "::error::git ls-remote named no commit for kanonak-protocol/packages' main"; exit 1; fi
+          status=$(curl -sS -o deployed.txt -w '%{http_code}' "$RECORD" || true)
+          case "$status" in
+            200) deployed=$(tr -d '[:space:]' < deployed.txt) ;;
+            404) deployed="" ;;
+            *) echo "::error::$RECORD answered $status, so the commit the live site was built from is unknown"; exit 1 ;;
+          esac
+          if [ "$deployed" = "$head" ]; then
+            echo "The live site was built from packages' main, $head, so there is nothing to deploy."
+            echo "build=false" >> "$GITHUB_OUTPUT"
+          else
+            from="$deployed"
+            if [ -z "$from" ]; then from="a commit it doesn't record"; fi
+            echo "packages' main is $head and the live site was built from $from, so it deploys."
+            echo "build=true" >> "$GITHUB_OUTPUT"
+          fi
+
   build:
+    needs: changed
+    if: needs.changed.outputs.build == 'true'
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout site repo
@@ -68,6 +102,10 @@ jobs:
       - name: Build the publisher origin
         # One command renders the whole origin from the package graph.
         run: npx --no-install kanonak publish --workspace _packages --out _site
+
+      - name: Record the packages commit this origin was built from
+        # The scheduled run compares packages' main with this to decide whether to deploy.
+        run: git -C _packages rev-parse HEAD > _site/packages-commit.txt
 
       - name: Add GitHub Pages host specifics
         run: |
